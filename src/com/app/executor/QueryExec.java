@@ -6,7 +6,7 @@ public class QueryExec {
 		// TODO Auto-generated method stub
         QueryTimer qt = new QueryTimer();
         qt.QueryNow();
-        //qt.QueryEvery5Mintue();
+        qt.QueryEvery5Mintue();
         qt.QueryEveryHour();
         
 	}

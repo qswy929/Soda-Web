@@ -26,7 +26,7 @@ public class QueryTimer {
 	public void QueryEvery5Mintue() throws ParseException
 	{
 		calendar.setTime(new Date());
-		calendar.add(Calendar.MINUTE, 1);
+		calendar.add(Calendar.MINUTE, 5);
 		calendar.set(Calendar.SECOND, 0);
 		Date time_start = calendar.getTime();
 		Timer timer = new Timer();

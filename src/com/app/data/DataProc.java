@@ -8,7 +8,11 @@ import java.io.OutputStreamWriter;
 import java.nio.channels.FileLock;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.util.ArrayList;
+
 import com.app.dao.SqlExec;
+import com.sun.org.apache.bcel.internal.generic.NEW;
 
 //查询处理类，负责Inceptor查询和组织结果
 public class DataProc {
@@ -19,8 +23,10 @@ public class DataProc {
 	//初始化为空的数据
 	private int aqiResult;
 	private int[][] metroResult = new int[20][2];
+	private int[][] taxiResult = new int[20][2];
 	private int[] mallResult = new int[8];
 	private int[] unicomResult = new int[20];
+	private ArrayList<Object[]> accResult = new ArrayList();
 
 	
 	//查询AQI
@@ -38,12 +44,16 @@ public class DataProc {
 	
 	//查询地铁信息
 	//metroResult第一列：入站，第二列：出站
-	private void getMetro() throws SQLException
+	private void getMetro() throws Exception
 	{
 		String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟
-		String[] para=date_min.split(" ");
+		String[] para = date_min.split(" ");
+		String rdate_min = new DateAdjuster().getRevisedDate(date_min, -5);
+		String[] rpara = rdate_min.split(" ");
+	
 		//要查5分钟之内的总数数
-		query="select sum(case when price=0 then 1 else 0 end),sum(case when price>0 then 1 else 0 end) from transcard where ddate='"+para[0]+"' and ttime='"+para[1]+"' group by gid order by gid";
+		query="select sum(case when price=0 then 1 else 0 end),sum(case when price>0 then 1 else 0 end) from transcard where ddate='"+para[0]+"' and ttime>='"+rpara[1]+"' and ttime<'"+para[1]+"' group by gid order by gid";
+		//System.out.println(query);
 		rs = se.getSqlResult(query);
 		int row = 0;
 		while(rs.next())
@@ -55,6 +65,45 @@ public class DataProc {
 		se.closeConn();
 	}
 	
+	//查询强生数据
+	//taxiResult第一列：上车，第二列：下车
+	private void getTaxi() throws Exception
+	{
+		String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟	
+		String rdate_min = new DateAdjuster().getRevisedDate(date_min, -5);
+	
+		//要查5分钟之内的总数数
+		query="select sum(case when empty=1 then 1 else 0 end),sum(case when empty=0 then 1 else 0 end) from taxi_core where gps_time>='"+rdate_min+"' and gps_time<'"+date_min+"' group by gid order by gid";
+		//System.out.println(query);
+		rs = se.getSqlResult(query);
+		int row = 0;
+		while(rs.next())
+		{
+			metroResult[row][0] = rs.getInt(1);
+			metroResult[row][1] = rs.getInt(2);
+			row++;
+		}
+		se.closeConn();
+	}
+	
+	//查询事故信息
+	private void getAccident() throws ParseException,SQLException
+	{
+		String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟	
+		String rdate_min = new DateAdjuster().getRevisedDate(date_min, -15);
+		query="select location,lo,la,gid from accident_core where ddate>='"+rdate_min+"' and ddate<'"+date_min+"'";
+		rs = se.getSqlResult(query);
+		Object[] result = new Object[4];
+		accResult.clear();
+		while (rs.next())
+		{	
+			result[0] = rs.getString(1);
+			result[1] = rs.getFloat(2);
+			result[2] = rs.getFloat(3);
+			result[3] = rs.getInt(4);
+			accResult.add(result);
+		}		
+	}
 	//查询汇纳商圈数据，返回人数
 	private void getMall() throws SQLException
 	{
@@ -62,7 +111,7 @@ public class DataProc {
 		String[] para=date_hour.split(" ");
 		query="select num from mall_core where ddate='"+para[0]+"' and ttime='"+para[1]+"' order by mname";
 		rs = se.getSqlResult(query);
-	    int row = 0;
+	   int row = 0;
 		while(rs.next())
 		{
 		    mallResult[row]= rs.getInt(1);
@@ -71,7 +120,7 @@ public class DataProc {
 		se.closeConn();
 	}
 	
-	//联据数据
+	//联通数据
 	private void getUnicom () throws SQLException
 	{
 		String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
@@ -90,9 +139,11 @@ public class DataProc {
 	
 	
 	//每5分钟执行的函数添加到此处
-	public void runMinute() throws SQLException
+	public void runMinute() throws Exception
 	{
 		getMetro();
+		getTaxi();
+		getAccident();
 	}
 	
 	//每小时执行的函数添加到处处

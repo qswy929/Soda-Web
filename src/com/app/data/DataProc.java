@@ -10,9 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
-
 import com.app.dao.SqlExec;
-import com.sun.org.apache.bcel.internal.generic.NEW;
 
 //查询处理类，负责Inceptor查询和组织结果
 public class DataProc {
@@ -21,7 +19,7 @@ public class DataProc {
 	private ResultSet rs = null;
 	
 	//初始化为空的数据
-	private int aqiResult;
+	private int aqiResult = 10;
 	private int[][] metroResult = new int[20][2];
 	private int[][] taxiResult = new int[20][2];
 	private int[] mallResult = new int[8];
@@ -43,7 +41,7 @@ public class DataProc {
 	}
 	
 	//查询地铁信息
-	//metroResult第一列：入站，第二列：出站
+	//metroResult第一列：出站，第二列：入站
 	private void getMetro() throws Exception
 	{
 		String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟
@@ -51,8 +49,8 @@ public class DataProc {
 		String rdate_min = new DateAdjuster().getRevisedDate(date_min, -5);
 		String[] rpara = rdate_min.split(" ");
 	
-		//要查5分钟之内的总数数
-		query="select sum(case when price=0 then 1 else 0 end),sum(case when price>0 then 1 else 0 end) from transcard where ddate='"+para[0]+"' and ttime>='"+rpara[1]+"' and ttime<'"+para[1]+"' group by gid order by gid";
+		//要查5分钟之内的总人数
+		query="select sum(case when price>0 then 1 else 0 end),sum(case when price=0 then 1 else 0 end) from transcard where ddate='"+para[0]+"' and ttime>='"+rpara[1]+"' and ttime<'"+para[1]+"' group by gid order by gid";
 		//System.out.println(query);
 		rs = se.getSqlResult(query);
 		int row = 0;
@@ -66,21 +64,21 @@ public class DataProc {
 	}
 	
 	//查询强生数据
-	//taxiResult第一列：上车，第二列：下车
+	//taxiResult第一列：下车，第二列：上车
 	private void getTaxi() throws Exception
 	{
 		String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟	
 		String rdate_min = new DateAdjuster().getRevisedDate(date_min, -5);
 	
-		//要查5分钟之内的总数数
-		query="select sum(case when empty=1 then 1 else 0 end),sum(case when empty=0 then 1 else 0 end) from taxi_core where gps_time>='"+rdate_min+"' and gps_time<'"+date_min+"' group by gid order by gid";
+		//要查5分钟之内的总人数
+		query="select sum(case when empty=0 then 1 else 0 end),sum(case when empty=1 then 1 else 0 end) from taxi_core where gps_time>='"+rdate_min+"' and gps_time<'"+date_min+"' group by gid order by gid";
 		//System.out.println(query);
 		rs = se.getSqlResult(query);
 		int row = 0;
 		while(rs.next())
 		{
-			metroResult[row][0] = rs.getInt(1);
-			metroResult[row][1] = rs.getInt(2);
+			taxiResult[row][0] = rs.getInt(1);
+			taxiResult[row][1] = rs.getInt(2);
 			row++;
 		}
 		se.closeConn();
@@ -97,10 +95,10 @@ public class DataProc {
 		accResult.clear();
 		while (rs.next())
 		{	
-			result[0] = rs.getString(1);
-			result[1] = rs.getFloat(2);
-			result[2] = rs.getFloat(3);
-			result[3] = rs.getInt(4);
+			result[0] = rs.getInt(4);
+			result[1] = rs.getString(1);
+			result[2] = rs.getFloat(2);
+			result[3] = rs.getFloat(3);
 			accResult.add(result);
 		}		
 	}
@@ -149,8 +147,8 @@ public class DataProc {
 	//每小时执行的函数添加到处处
 	public void runHour() throws SQLException
 	{
-		//getMall();
-		//getAqi();
+		getMall();
+		getAqi();
 		getUnicom();
 	}
 	
@@ -167,16 +165,28 @@ public class DataProc {
 			fo = new FileOutputStream("/root/soda/dataMinute.txt");
 		   ow = new OutputStreamWriter(fo);
 			bw = new BufferedWriter(ow);
-			int i;
+			int i,j;
 			fl=fo.getChannel().tryLock();   //“写”上锁
 			if(fl!=null)
 		    {
 				 System.out.println("Locked File Minute.");
 			}
-			for(i=0;i<20;i++)
-			{
-			    bw.write(metroResult[i][0]+" ");
-			    bw.write(metroResult[i][1]+"\n");
+			for(i=0;i<20;i++)  //20行
+			{						
+				bw.write(metroResult[i][0]+" ");  //地铁
+			   bw.write(metroResult[i][1]+" ");  //地铁
+			   bw.write(taxiResult[i][0]+" ");  //出租
+			   bw.write(taxiResult[i][1]+" ");  //出租
+			   for(j=0;j<accResult.size();j++)
+			    {
+				   if((Integer)accResult.get(j)[0]==i+1)  //道路事故
+				    {
+					   bw.write((String)accResult.get(j)[1]+" ");  //事故路名
+					   bw.write((Float)accResult.get(j)[2]+" ");  //事故地点经度
+					   bw.write((Float)accResult.get(j)[3]+" ");  //事故地点纬度
+				    }	
+			    }
+			   bw.write("\n");
 			}
 		}
 		catch (FileNotFoundException e) {
@@ -223,10 +233,16 @@ public class DataProc {
 			    {
 					 System.out.println("Locked File Hour.");
 				}
-				for(i=0;i<20;i++)
+				for(i=0;i<20;i++)  //前20项
 				{
-				    bw.write(unicomResult[i]+"\n");
+					bw.write(unicomResult[i]+" ");   //联通数据
 				}
+				for(i=0;i<8;i++)
+				{
+					bw.write(mallResult[i]+" ");   //商圈数据
+				}			
+				bw.write(aqiResult+"\n");   //AQI数据
+				
 			}
 			catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
@@ -252,5 +268,5 @@ public class DataProc {
 				    }   
 			   }
 		   }
-		}
+	  }
 }

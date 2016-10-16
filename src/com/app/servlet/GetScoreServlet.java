@@ -109,7 +109,7 @@ public class GetScoreServlet extends HttpServlet {
 					b = b.setScale(2, BigDecimal.ROUND_HALF_UP);		
 					jo_tmp.put(pname[i], b);
 				}
-				jo.put("degree", jo_tmp);
+				jo.put("detail", jo_tmp);
 				BigDecimal b = new BigDecimal(score);
 				b = b.setScale(2, BigDecimal.ROUND_HALF_UP);	
 				jo.put("score", b);

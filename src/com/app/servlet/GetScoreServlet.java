@@ -21,14 +21,14 @@ import com.app.transfer.Transfer;
 /**
  * Servlet implementation class GetDegreeServlet
  */
-@WebServlet("/GetDegreeServlet")
-public class GetDegreeServlet extends HttpServlet {
+@WebServlet("/GetScoreServlet")
+public class GetScoreServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
        
     /**
      * @see HttpServlet#HttpServlet()
      */
-    public GetDegreeServlet() {
+    public GetScoreServlet() {
         super();
         // TODO Auto-generated constructor stub
     }
@@ -50,6 +50,7 @@ public class GetDegreeServlet extends HttpServlet {
 		FileReader ahfr = new FileReader("/root/soda/accu_dataHour.txt");
 		BufferedReader ahbr = new BufferedReader(ahfr);
 		int[] xishu = {16,24,32,8,7,8,5};
+		String[] pname ={"metro","taxi","mall","unicom","accident","rainfall","aqi"};
 		JSONArray ja = new JSONArray();  //最终结果
 		String hresult,mresult,ahresult,amresut;
 		int i;
@@ -57,7 +58,7 @@ public class GetDegreeServlet extends HttpServlet {
 		String mstring[] = null;
 		String amstring[] = null;
 		String ahstring[] = null;
-		float t1,t2,t3,t4,t5,t6,t7;	
+		float[] para = new float[7];	
 		
 		if((hresult=br.readLine())!=null)
 		{
@@ -73,39 +74,51 @@ public class GetDegreeServlet extends HttpServlet {
 			mstring=mresult.split(" ");   //>=4
 			amstring=amresut.split(" ");  //4
 			ahstring=ahresult.split(" "); //4
-			t1=(Float.valueOf(mstring[0])+Integer.valueOf(mstring[1]))/Integer.valueOf(amstring[0]);  //metro
-			t2=(Float.valueOf(mstring[2])+Integer.valueOf(mstring[3])-Integer.valueOf(amstring[1]))/(Integer.valueOf(amstring[2])-Integer.valueOf(amstring[1])); //taxi
+			para[0]=(Float.valueOf(mstring[0])+Integer.valueOf(mstring[1]))/Integer.valueOf(amstring[0]);  //metro
+			para[1]=(Float.valueOf(mstring[2])+Integer.valueOf(mstring[3])-Integer.valueOf(amstring[1]))/(Integer.valueOf(amstring[2])-Integer.valueOf(amstring[1])); //taxi
 			switch(row)  //mall
 			{
-			    case 0: t3=(Float.valueOf(hstring[22])+Integer.valueOf(hstring[23])+Integer.valueOf(hstring[24])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
-			    case 1: t3=(Float.valueOf(hstring[20])+Integer.valueOf(hstring[21])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
-			    default: t3=(Float.valueOf(hstring[25])+Integer.valueOf(hstring[26])+Integer.valueOf(hstring[27])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));
+			    case 0: para[2]=(Float.valueOf(hstring[22])+Integer.valueOf(hstring[23])+Integer.valueOf(hstring[24])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
+			    case 1: para[2]=(Float.valueOf(hstring[20])+Integer.valueOf(hstring[21])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
+			    default: para[2]=(Float.valueOf(hstring[25])+Integer.valueOf(hstring[26])+Integer.valueOf(hstring[27])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));
 			}
-			t4=(Float.valueOf(hstring[row])-Integer.valueOf(ahstring[0]))/(Integer.valueOf(ahstring[1])-Integer.valueOf(ahstring[0]));  //unicom
-			t5=t.accFormal(Integer.valueOf(amstring[3]));  //accident
+			para[3]=(Float.valueOf(hstring[row])-Integer.valueOf(ahstring[0]))/(Integer.valueOf(ahstring[1])-Integer.valueOf(ahstring[0]));  //unicom
+			para[4]=t.accFormal(Integer.valueOf(amstring[3]));  //accident
 			if(row==2)  //宝山气象站
 			{
-				t6=t.rainFormal(Float.valueOf(hstring[29]));   //rainfall
+				para[5]=t.rainFormal(Float.valueOf(hstring[29]));   //rainfall
 			}
 			else   //徐家汇气象站
 			{
-				t6=t.rainFormal(Float.valueOf(hstring[28]));   //rainfall
+				para[5]=t.rainFormal(Float.valueOf(hstring[28]));   //rainfall
 			}
-			t7=t.aqiFormal(Integer.valueOf(hstring[30]));
+			para[6]=t.aqiFormal(Integer.valueOf(hstring[30]));
 			//System.out.println(t1+" "+t2);
-			float score = xishu[0]*t1+xishu[1]*t2+xishu[2]*t3+xishu[3]*t4+xishu[4]*t5+xishu[5]*t6+xishu[6]*t7;
-			BigDecimal b = new BigDecimal(score);
-	      b = b.setScale(2, BigDecimal.ROUND_HALF_UP);
+			float score = 0f;
+			for(i=0;i<7;i++)
+			{
+				score += xishu[i]*para[i];
+			}
 			JSONObject jo = new JSONObject();
+			JSONObject jo_tmp = new JSONObject();
 			try {
 				jo.put("gid", row+1);
-				jo.put("degree", b);
+				for(i=0;i<7;i++)
+				{
+					BigDecimal b = new BigDecimal(para[i]);
+					b = b.setScale(2, BigDecimal.ROUND_HALF_UP);		
+					jo_tmp.put(pname[i], b);
+				}
+				jo.put("degree", jo_tmp);
+				BigDecimal b = new BigDecimal(score);
+				b = b.setScale(2, BigDecimal.ROUND_HALF_UP);	
+				jo.put("score", b);
 				ja.put(jo);
-				
-			   } catch (JSONException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			    }
+			}
+				catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+			}
 			row++;
 		}
 		br.close();  //差点忘了关闭文件

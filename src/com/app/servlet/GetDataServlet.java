@@ -47,7 +47,7 @@ public class GetDataServlet extends HttpServlet {
 		String hstring[] = null;  //保存小时信息
 		if((hresult=br.readLine())!=null)
 		{
-			hstring = hresult.split(" ");   //20+8+1
+			hstring = hresult.split(" ");   //20+8+2+1
 		}
 		br.close();
 		fr.close();		
@@ -76,9 +76,9 @@ public class GetDataServlet extends HttpServlet {
        			  acc_jo.put("gid", row+1);
          		  acc_jo.put("location", temp_line[4]);
          		  BigDecimal b = new BigDecimal(temp_line[5].toString());
-         		  acc_jo.put("lo", b.setScale(6, BigDecimal.ROUND_HALF_UP));
+         		  acc_jo.put("lo", b.setScale(6, BigDecimal.ROUND_DOWN));
          		  b= new BigDecimal(temp_line[6].toString());
-         		  acc_jo.put("la", b.setScale(6, BigDecimal.ROUND_HALF_UP));
+         		  acc_jo.put("la", b.setScale(6, BigDecimal.ROUND_DOWN));
          		  acci_arr.add(acc_jo);
        		      }			  
        	       }
@@ -133,7 +133,13 @@ public class GetDataServlet extends HttpServlet {
 				ja.put(j);
 			}
 			final_result.put("accident", ja);
-			final_result.put("aqi", Integer.parseInt(hstring[28]));		
+			JSONObject rain_jo = new JSONObject();
+			BigDecimal b = new BigDecimal(hstring[28]);
+   		rain_jo.put("徐家汇", b.setScale(1, BigDecimal.ROUND_DOWN));
+   		b = new BigDecimal(hstring[29]);
+   		rain_jo.put("宝山", b.setScale(1, BigDecimal.ROUND_DOWN));
+			final_result.put("rainfall", rain_jo);
+			final_result.put("aqi", Integer.parseInt(hstring[30]));		
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

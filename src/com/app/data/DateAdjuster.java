@@ -5,8 +5,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-import org.apache.hadoop.hdfs.server.datanode.dataNodeHome_jsp;
-
 //日期设定类，查询语句中的年月固定为2016年3月
 public class DateAdjuster {
 	
@@ -30,6 +28,16 @@ public class DateAdjuster {
 		calendar.add(Calendar.MINUTE, min);
 		return dateFormat.format(calendar.getTime());	
 	}
+	
+	//将给定时间加快h小时
+		public String getRevisedDateH(String date,int h) throws ParseException
+		{
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(dateFormat.parse(date));
+			calendar.add(Calendar.HOUR, h);
+			return dateFormat.format(calendar.getTime());	
+		}
 	
 	
 	//返回小时粒度的时间

@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import com.app.data.DataProc;
+import com.app.data.DateAdjuster;
 
 //定时执行类，分为立即执行、每分钟执行、每整点执行
 public class QueryTimer {
@@ -16,10 +17,14 @@ public class QueryTimer {
     //如果当前数据为空，则立刻运行此函数
     public void QueryNow() throws Exception
     {
-    	dp.runMinute();
-    	dp.saveMinuteData();
-    	dp.runHour();
+    	String date_min = new DateAdjuster().getDate();
+    	String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
+    	dp.runHour(date_hour);
     	dp.saveHourData();
+    	dp.saveAccuHourData();
+    	dp.runMinute(date_min);
+    	dp.saveMinuteData();
+    	dp.saveAccuMinuteData();
     }
     
     //每5分钟查询一次
@@ -27,7 +32,7 @@ public class QueryTimer {
 	{
 		calendar.setTime(new Date());
 		calendar.add(Calendar.MINUTE, 5);
-		calendar.set(Calendar.SECOND, 0);
+		calendar.set(Calendar.SECOND, 10);
 		Date time_start = calendar.getTime();
 		Timer timer = new Timer();
 		timer.scheduleAtFixedRate(new TimerTask() {
@@ -36,8 +41,10 @@ public class QueryTimer {
 			public void run() {
 				// TODO Auto-generated method stub
 				try {
-					dp.runMinute();
+					String date_min = new DateAdjuster().getDate();
+					dp.runMinute(date_min);
 					dp.saveMinuteData();
+					dp.saveAccuMinuteData();
 
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
@@ -62,8 +69,10 @@ public class QueryTimer {
 			public void run() {
 				// TODO Auto-generated method stub
 				try {
-					dp.runHour();
+					String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
+					dp.runHour(date_hour);
 					dp.saveHourData();
+					dp.saveAccuHourData();
 					
 				} catch (Exception e) {
 					// TODO Auto-generated catch block

@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -16,6 +18,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.app.transfer.DateAdjuster;
 import com.app.transfer.Transfer;
 
 /**
@@ -75,6 +78,11 @@ public class GetScoreServlet extends HttpServlet {
 			amstring=amresut.split(" ");  //4
 			ahstring=ahresult.split(" "); //4
 			para[0]=(Float.valueOf(mstring[0])+Integer.valueOf(mstring[1]))/Integer.valueOf(amstring[0]);  //metro
+			DateAdjuster da = new DateAdjuster();
+			if(da.getDateHour().contains("2016-03-17"))  //强生出租车缺少3月17日的数据
+			{
+				amstring[1]="0";
+			}
 			para[1]=(Float.valueOf(mstring[2])+Integer.valueOf(mstring[3])-Integer.valueOf(amstring[1]))/(Integer.valueOf(amstring[2])-Integer.valueOf(amstring[1])); //taxi
 			switch(row)  //mall
 			{

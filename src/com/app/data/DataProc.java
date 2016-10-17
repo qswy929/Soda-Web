@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import com.app.dao.SqlExec;
+import com.app.transfer.DateAdjuster;
 
 //查询处理类，负责Inceptor查询和组织结果
 public class DataProc {
@@ -244,7 +245,7 @@ public class DataProc {
 				"when gps_time>'"+da.getRevisedDateH(date_min, -23)+"' and gps_time<='"+da.getRevisedDateH(date_min, -22)+"' then 23 "+
 				"when gps_time>'"+da.getRevisedDateH(date_min, -24)+"' and gps_time<='"+da.getRevisedDateH(date_min, -23)+"' then 24 "+
 				"else 25 end tj "+
-				"from taxi_core where gps_time>'"+da.getRevisedDateH(date_min, -24)+"' and gps_time<='"+date_min+"' and gid<4 group by tj,gid) group by gid order by gid";
+				"from taxi_core where gps_time>'"+da.getRevisedDateH(date_min, -24)+"' and gps_time<='"+date_min+"' and taxi_core.gid<4 group by tj,gid) group by gid order by gid";
 		rs = se.getSqlResult(query);
 		int row = 0;
 		while(rs.next())

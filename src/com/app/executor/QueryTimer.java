@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import com.app.data.DataProc;
-import com.app.data.DateAdjuster;
+import com.app.transfer.DateAdjuster;
 
 //定时执行类，分为立即执行、每分钟执行、每整点执行
 public class QueryTimer {

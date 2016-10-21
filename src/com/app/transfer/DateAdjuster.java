@@ -29,6 +29,47 @@ public class DateAdjuster {
 		return dateFormat.format(calendar.getTime());	
 	}
 	
+	//返回最近的半小时时间
+	public String getDateHalfHour(String date) throws ParseException
+	{
+		String[] time = date.split(":");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(dateFormat.parse(date));
+		if(Integer.parseInt(time[1])>0 && Integer.parseInt(time[1])<30)
+		{	
+			calendar.set(Calendar.MINUTE,0);
+			return dateFormat.format(calendar.getTime());	
+		}
+		else if(Integer.parseInt(time[1])>30 && Integer.parseInt(time[1])<=59)
+		{
+			calendar.set(Calendar.MINUTE,30);			
+		}
+		return dateFormat.format(calendar.getTime());	
+	}
+	
+	//还需多久执行一次半小时查询
+	public int getLatency(String date) throws ParseException
+	{
+		String[] time = date.split(":");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(dateFormat.parse(date));
+		if(Integer.parseInt(time[1])>0 && Integer.parseInt(time[1])<30)
+		{	
+			return 30-Integer.parseInt(time[1]);	
+		}
+		else if(Integer.parseInt(time[1])>30 && Integer.parseInt(time[1])<=59)
+		{		
+			return 60-Integer.parseInt(time[1]);	
+		}
+		else
+		{
+			return 0;	
+		}		
+	}
+	
+	
 	//将给定时间加快h小时
 		public String getRevisedDateH(String date,int h) throws ParseException
 		{

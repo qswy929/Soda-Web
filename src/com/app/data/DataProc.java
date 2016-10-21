@@ -12,11 +12,13 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import com.app.dao.SqlExec;
+import com.app.predict.HoltWinters;
 import com.app.transfer.DateAdjuster;
 
 //查询处理类，负责Inceptor查询和组织结果
 public class DataProc {
    private SqlExec se = new SqlExec();
+   private HoltWinters hw = new HoltWinters();
 	private String query="";
 	private ResultSet rs = null;
 	private DateAdjuster da = new DateAdjuster();
@@ -33,9 +35,38 @@ public class DataProc {
 	private int[][] hunicomResult = new int[3][2];
 	private int[][] hmallResult = new int[3][2];
 	private int[] accCount = {0,0,0};
-	
+	private ArrayList<Double> gid1_score = new ArrayList();
+	private ArrayList<Double> gid2_score = new ArrayList();
+	private ArrayList<Double> gid3_score = new ArrayList();
 	private ArrayList<Object[]> accResult = new ArrayList();
-
+	private BigDecimal[] predictScore = new BigDecimal[3];
+	
+	//查询分数
+	private void getScore(String date_half_hour) throws ParseException, SQLException
+	{
+		gid1_score.clear();
+		gid2_score.clear();
+		gid3_score.clear();
+		query="select score from predict where ddate>'"+da.getRevisedDateH(date_half_hour, -24)+"' and ddate<='"+date_half_hour+"'";
+	   rs = se.getSqlResult(query);
+	   int row = 0;
+	   while(rs.next())
+	   {
+		   if(row%3==0)
+		    {
+			   gid1_score.add(rs.getDouble(1));
+		    }
+		   else if(row%3==1)
+		    {
+			   gid2_score.add(rs.getDouble(1));
+		    }
+		   else
+		    {
+			   gid3_score.add(rs.getDouble(1));
+		    }
+		   row++;
+	   }
+	}
 	
 	//查询AQI
 	private void getAqi(String date_hour) throws SQLException
@@ -308,9 +339,19 @@ public class DataProc {
 		getTaxi(date_min);
 		getAccident(date_min);
 		min_Max_Metro(date_min);
-		min_Max_Taxi(date_min);
-		
+		min_Max_Taxi(date_min);		
 	}
+	
+	//每半小时执行的函数添加到此处
+	public void runHalfHour(String date_half_hour) throws Exception
+	{
+		getScore(date_half_hour);
+		//System.out.println(date_half_hour);
+		//System.out.println(gid1_score.size());
+		//System.out.println(gid2_score.size());
+		//System.out.println(gid3_score.size());
+	}
+
 	
 	//每小时执行的函数添加到处处
 	public void runHour(String date_hour) throws SQLException, ParseException
@@ -320,7 +361,7 @@ public class DataProc {
 		getAqi(date_hour);
 		getUnicom(date_hour);
 		min_Max_Mall(date_hour);
-		min_Max_Unicom(date_hour);
+		min_Max_Unicom(date_hour);		
 	}
 	
 	
@@ -438,6 +479,76 @@ public class DataProc {
 		   }
 	   }
 	}
+	
+	//保存每半小时查询结果
+			public void saveHalfHourData(String date_half_hour)
+			{
+				//FileWriter fw = new FileWriter("/root/soda/dataMinute.txt",false);
+				FileOutputStream fo=null;;
+				OutputStreamWriter ow=null;
+				BufferedWriter bw=null;
+				FileLock fl = null;
+				int i;
+				double[] temp = new double[gid1_score.size()];
+				//计算预测值
+				for(i=0;i<gid1_score.size();i++)
+				{
+					temp[i]= gid1_score.get(i);
+				}
+			   predictScore[0]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
+			   for(i=0;i<gid2_score.size();i++)
+				{
+					temp[i]= gid2_score.get(i);
+				}
+			   predictScore[1]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
+			   for(i=0;i<gid3_score.size();i++)
+				{
+					temp[i]= gid3_score.get(i);
+				}
+			   predictScore[2]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
+				try {
+					fo = new FileOutputStream("/root/soda/dataHalfHour.txt");
+				   ow = new OutputStreamWriter(fo);
+					bw = new BufferedWriter(ow);
+					fl=fo.getChannel().tryLock();   //“写”上锁
+					if(fl!=null)
+				    {
+				       System.out.println("Locked File Half Hour.");
+					}
+				   for(i=0;i<3;i++)
+				    {
+				 	    bw.write(date_half_hour+" ");
+				 	    bw.write((i+1)+" ");
+						 bw.write(predictScore[i].setScale(2, BigDecimal.ROUND_DOWN)+"\n"); 
+				    }					
+					
+				}
+				catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			   finally {
+				   if(fl!=null)
+				   {
+					   try {
+						   fl.release();   //释放锁
+						   bw.flush();
+						   bw.close();
+						   ow.close();
+						   fo.close();
+						  System.out.println("Released Lock Half Hour.");
+				    	} catch (IOException e) {
+						    // TODO Auto-generated catch block
+						    e.printStackTrace();
+					    }   
+				   }
+			   }
+		  }
+	
 	
 
 	//保存每小时查询结果

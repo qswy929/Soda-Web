@@ -52,8 +52,9 @@ public class GetScoreServlet extends HttpServlet {
 		BufferedReader ambr = new BufferedReader(amfr);
 		FileReader ahfr = new FileReader("/root/soda/accu_dataHour.txt");
 		BufferedReader ahbr = new BufferedReader(ahfr);
-		int[] xishu = {16,24,32,8,7,8,5};
+		int[] xishu = {16,24,32,8,5,7,8};
 		String[] pname ={"metro","taxi","mall","unicom","accident","rainfall","aqi"};
+		JSONObject jo_final = new JSONObject();
 		JSONArray ja = new JSONArray();  //最终结果
 		String hresult,mresult,ahresult,amresut;
 		int i;
@@ -135,7 +136,31 @@ public class GetScoreServlet extends HttpServlet {
 	   amfr.close();
 	   ahbr.close();
 	   ahfr.close();
-	   out.print(ja.toString());
+	   try {
+		jo_final.put("current", ja);
+		fr = new FileReader("/root/soda/dataHalfHour.txt");
+		br = new BufferedReader(fr);	
+		i=0;
+		ja = new JSONArray();
+      while((hresult=br.readLine())!=null)
+		{
+			JSONObject jo = new JSONObject();
+			jo.put("gid", i+1);
+			hstring = hresult.split(" ");
+			BigDecimal b = new BigDecimal(hstring[3]);
+			jo.put("score", b.setScale(2, BigDecimal.ROUND_DOWN));
+			ja.put(jo);
+			i++;
+		}
+      jo_final.put("predict", ja);
+      br.close();
+      fr.close();
+		
+	} catch (JSONException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}  
+	   out.print(jo_final.toString());
       out.flush();
 		out.close();
 		

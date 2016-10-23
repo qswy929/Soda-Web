@@ -16,6 +16,10 @@ public class DateAdjuster {
 		calendar.set(Calendar.YEAR,2016);
 		calendar.set(Calendar.MONTH, 2);
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		if(dateFormat.format(calendar.getTime()).contains("2016-03-01"))
+		{
+			calendar.add(Calendar.DAY_OF_MONTH, 30);
+		}	
 		return dateFormat.format(calendar.getTime());
 	}
 	
@@ -52,9 +56,6 @@ public class DateAdjuster {
 	public int getLatency(String date) throws ParseException
 	{
 		String[] time = date.split(":");
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-		Calendar calendar = Calendar.getInstance();
-		calendar.setTime(dateFormat.parse(date));
 		if(Integer.parseInt(time[1])>0 && Integer.parseInt(time[1])<30)
 		{	
 			return 30-Integer.parseInt(time[1]);	
@@ -67,6 +68,12 @@ public class DateAdjuster {
 		{
 			return 0;	
 		}		
+	}
+	
+	public int getLatencyM(String date) throws ParseException
+	{
+		String[] time = date.split(":");
+		return 10*(Integer.parseInt(time[1])/10)+9-Integer.parseInt(time[1]);
 	}
 	
 	
@@ -90,6 +97,10 @@ public class DateAdjuster {
 		calendar.set(Calendar.MONTH, 2);
 		calendar.set(Calendar.MINUTE,0);
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+		if(dateFormat.format(calendar.getTime()).contains("2016-03-01"))
+		{
+			calendar.add(Calendar.DAY_OF_MONTH, 30);
+		}	
 		return dateFormat.format(calendar.getTime());	
 	}
 }

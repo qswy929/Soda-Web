@@ -31,12 +31,14 @@ public class QueryTimer {
     	dp.saveHalfHourData(date_half_hour);
     }
     
-    //每5分钟查询一次
-	public void queryEvery5Mintue() throws ParseException
+    //每10分钟查询一次
+	public void queryEvery10Mintue() throws ParseException
 	{
-		calendar.setTime(new Date());
-		calendar.add(Calendar.MINUTE, 5);
-		calendar.set(Calendar.SECOND, 10);
+		Date cur_date = new Date();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");	
+		calendar.setTime(cur_date);
+		calendar.add(Calendar.MINUTE, new DateAdjuster().getLatencyM(dateFormat.format(cur_date)));
+		calendar.set(Calendar.SECOND, 0);
 		Date time_start = calendar.getTime();
 		Timer timer = new Timer();
 		timer.scheduleAtFixedRate(new TimerTask() {
@@ -46,18 +48,19 @@ public class QueryTimer {
 				// TODO Auto-generated method stub
 				try {
 					String date_min = new DateAdjuster().getDate();
-					if(date_min.compareTo("2016-03-17 00:00")<0 || date_min.compareTo("2016-03-18 23:59")>1)
-					{
+				
 						dp.runMinute(date_min);
 						dp.saveMinuteData();
-						dp.saveAccuMinuteData();
-					}
+						if(!date_min.contains("2016-03-17") && !date_min.contains("2016-03-18"))
+						{
+							dp.saveAccuMinuteData();
+						}					
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
-		}, time_start, 1000*60*5);
+		}, time_start, 1000*60*10);
 	}
 	
 	
@@ -78,13 +81,14 @@ public class QueryTimer {
 					// TODO Auto-generated method stub
 					try {
 						String date_min = new DateAdjuster().getDate();
-						if(date_min.compareTo("2016-03-17 00:00")<0 || date_min.compareTo("2016-03-18 23:59")>1)
-						{
+
 							DateAdjuster da = new DateAdjuster();					
 							String date_half_hour = da.getDateHalfHour(date_min);
-	                  dp.runHalfHour(date_half_hour);
-	                  dp.saveHalfHourData(date_half_hour);
-						}		
+							if(!date_half_hour.contains("2016-03-17") && !date_half_hour.contains("2016-03-18") && !date_half_hour.contains("2016-03-19"))
+							{
+								dp.runHalfHour(date_half_hour);
+				            dp.saveHalfHourData(date_half_hour);
+							}	
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -100,7 +104,7 @@ public class QueryTimer {
 		calendar.setTime(new Date());
 		calendar.add(Calendar.HOUR, 1);  //会进位
 		calendar.set(Calendar.MINUTE, 0);
-		calendar.set(Calendar.SECOND, 0);
+		calendar.set(Calendar.SECOND, 3);
 		Date time_start= calendar.getTime();
 		Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -110,12 +114,13 @@ public class QueryTimer {
 				// TODO Auto-generated method stub
 				try {
 					String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
-					if(date_hour.compareTo("2016-03-17 00:00")<0 || date_hour.compareTo("2016-03-18 23:59")>1)
-					{
+
 						dp.runHour(date_hour);
 						dp.saveHourData();
-						dp.saveAccuHourData();
-					}		
+						if(!date_hour.contains("2016-03-17") && !date_hour.contains("2016-03-18"))
+						{
+							dp.saveAccuHourData();
+						}						
 				} catch (Exception e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

@@ -7,7 +7,7 @@ public class QueryExec {
         QueryTimer qt = new QueryTimer();
         qt.queryNow();      
         qt.queryEveryHour();
-        qt.queryEvery5Mintue();
+        qt.queryEvery10Mintue();
         qt.queryEveryHalfHour();
 	}
 

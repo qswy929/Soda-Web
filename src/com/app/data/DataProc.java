@@ -66,6 +66,8 @@ public class DataProc {
 		    }
 		   row++;
 	   }
+	   rs.close();
+	   se.closeConn();
 	}
 	
 	//查询AQI
@@ -199,7 +201,7 @@ public class DataProc {
 	}
 	
 	/*以下是累计一小时的数据*/
-	public void min_Max_Metro(String date_min) throws ParseException, SQLException
+	private void min_Max_Metro(String date_min) throws ParseException, SQLException
 	{
 		//String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟
 		//da.getRevisedDateH(date_min, -1);
@@ -244,7 +246,7 @@ public class DataProc {
 		se.closeConn();
 	}
 	
-	public void min_Max_Taxi(String date_min) throws ParseException, SQLException
+	private void min_Max_Taxi(String date_min) throws ParseException, SQLException
 	{
 		//String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟	
 		query="select case "+ 
@@ -289,7 +291,7 @@ public class DataProc {
 		se.closeConn();
 	}
 	
-	public void min_Max_Mall(String date_hour) throws ParseException, SQLException
+	private void min_Max_Mall(String date_hour) throws ParseException, SQLException
 	{
 		query="select min(summ),max(summ) from "+
 				"(select ddate,sum(num) summ,case "+
@@ -310,13 +312,13 @@ public class DataProc {
 		se.closeConn();
 	}
 	
-	public void min_Max_Unicom(String date_hour) throws ParseException, SQLException
+	private void min_Max_Unicom(String date_hour) throws ParseException, SQLException
 	{
 		query="select case "+
-"when min(summ) is null then 0 "+
-"else min(summ) end, "+
-"max(summ) from(select gid,count(*) summ "+
-"from unicom_core where ddate>'"+da.getRevisedDateH(date_hour, -24)+"' and ddate<='"+date_hour+"' and gid<4 group by ddate,gid) group by gid order by gid";
+				"when min(summ) is null then 0 "+
+				"else min(summ) end, "+
+				"max(summ) from(select gid,count(*) summ "+
+				"from unicom_core where ddate>'"+da.getRevisedDateH(date_hour, -24)+"' and ddate<='"+date_hour+"' and gid<4 group by ddate,gid) group by gid order by gid";
 
 		rs = se.getSqlResult(query);
 	   int row = 0;
@@ -331,25 +333,24 @@ public class DataProc {
 	}
 	
 	
-	
-	//每5分钟执行的函数添加到此处
+	//每10分钟执行的函数添加到此处
 	public void runMinute(String date_min) throws Exception
 	{
 		getMetro(date_min);
 		getTaxi(date_min);
 		getAccident(date_min);
-		min_Max_Metro(date_min);
-		min_Max_Taxi(date_min);		
+		if(!date_min.contains("2016-03-17") && !date_min.contains("2016-03-18"))
+		{
+			min_Max_Metro(date_min);
+			min_Max_Taxi(date_min);	
+		}
+			
 	}
 	
 	//每半小时执行的函数添加到此处
 	public void runHalfHour(String date_half_hour) throws Exception
 	{
 		getScore(date_half_hour);
-		//System.out.println(date_half_hour);
-		//System.out.println(gid1_score.size());
-		//System.out.println(gid2_score.size());
-		//System.out.println(gid3_score.size());
 	}
 
 	
@@ -360,12 +361,16 @@ public class DataProc {
 		getRainfall(date_hour);
 		getAqi(date_hour);
 		getUnicom(date_hour);
-		min_Max_Mall(date_hour);
-		min_Max_Unicom(date_hour);		
+		if(!date_hour.contains("2016-03-17") && !date_hour.contains("2016-03-18"))
+		{
+			min_Max_Mall(date_hour);
+			min_Max_Unicom(date_hour);		
+		}
+		
 	}
 	
 	
-	//保存每5分钟查询结果
+	//保存每10分钟查询结果
 	public void saveMinuteData()
 	{
 		//FileWriter fw = new FileWriter("/root/soda/dataMinute.txt",false);
@@ -381,7 +386,7 @@ public class DataProc {
 			fl=fo.getChannel().tryLock();   //“写”上锁
 			if(fl!=null)
 		    {
-				 System.out.println("Locked File Minute.");
+				 System.out.print("Locked File Minute. ");
 			}
 			for(i=0;i<20;i++)  //20行
 			{						
@@ -433,7 +438,7 @@ public class DataProc {
 	   }
 	}
 	
-    //保存每5分钟统计的1小时累计最值
+    //保存每10分钟统计的1小时累计最值
 	public void saveAccuMinuteData()
 	{
 		FileOutputStream fo=null;;
@@ -448,7 +453,7 @@ public class DataProc {
 			fl=fo.getChannel().tryLock();   //“写”上锁
 			if(fl!=null)
 		    {
-				 System.out.println("Locked File Accu_Minute.");
+				 System.out.print("Locked File Accu_Minute. ");
 			}
 			for(i=0;i<3;i++)
 			{
@@ -481,7 +486,7 @@ public class DataProc {
 	}
 	
 	//保存每半小时查询结果
-			public void saveHalfHourData(String date_half_hour)
+			public void saveHalfHourData(String date_half_hour) throws ParseException
 			{
 				//FileWriter fw = new FileWriter("/root/soda/dataMinute.txt",false);
 				FileOutputStream fo=null;;
@@ -513,11 +518,11 @@ public class DataProc {
 					fl=fo.getChannel().tryLock();   //“写”上锁
 					if(fl!=null)
 				    {
-				       System.out.println("Locked File Half Hour.");
+				       System.out.print("Locked File Half Hour. ");
 					}
 				   for(i=0;i<3;i++)
 				    {
-				 	    bw.write(date_half_hour+" ");
+				 	    bw.write(new DateAdjuster().getRevisedDate(date_half_hour, 30)+" ");
 				 	    bw.write((i+1)+" ");
 						 bw.write(predictScore[i].setScale(2, BigDecimal.ROUND_DOWN)+"\n"); 
 				    }					
@@ -567,7 +572,7 @@ public class DataProc {
 				fl=fo.getChannel().tryLock();   //“写”上锁
 				if(fl!=null)
 			    {
-					 System.out.println("Locked File Hour.");
+					 System.out.print("Locked File Hour. ");
 				}
 				for(i=0;i<20;i++)  //前20项
 				{
@@ -624,7 +629,7 @@ public class DataProc {
 				fl=fo.getChannel().tryLock();   //“写”上锁
 				if(fl!=null)
 			    {
-					 System.out.println("Locked File Accu_Hour.");
+					 System.out.print("Locked File Accu_Hour. ");
 				}
 				for(i=0;i<3;i++)
 				{

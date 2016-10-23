@@ -40,129 +40,149 @@ public class GetScoreServlet extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// TODO Auto-generated method stub
+		// TODO Auto-generated method stub	
 		request.setCharacterEncoding("UTF-8");
 		response.setContentType("application/json"); 
       response.setCharacterEncoding("UTF-8"); 
-      Transfer t = new Transfer();
       PrintWriter out = response.getWriter();
-		FileReader fr = new FileReader("/root/soda/dataHour.txt");
-		BufferedReader br = new BufferedReader(fr);
-		FileReader amfr = new FileReader("/root/soda/accu_dataMinute.txt");
-		BufferedReader ambr = new BufferedReader(amfr);
-		FileReader ahfr = new FileReader("/root/soda/accu_dataHour.txt");
-		BufferedReader ahbr = new BufferedReader(ahfr);
-		int[] xishu = {16,24,32,8,5,7,8};
-		String[] pname ={"metro","taxi","mall","unicom","accident","rainfall","aqi"};
-		JSONObject jo_final = new JSONObject();
+      JSONObject jo_final = new JSONObject();
 		JSONArray ja = new JSONArray();  //最终结果
-		String hresult,mresult,ahresult,amresut;
-		int i;
-		String hstring[] = null;  //保存小时信息
-		String mstring[] = null;
-		String amstring[] = null;
-		String ahstring[] = null;
-		float[] para = new float[7];	
-		
-		if((hresult=br.readLine())!=null)
-		{
-			hstring = hresult.split(" ");   //20+8+2+1
+      if(!new DateAdjuster().getDate().contains("2016-03-01"))
+        {
+    	   Transfer t = new Transfer();
+         
+    		FileReader fr = new FileReader("/root/soda/dataHour.txt");
+    		BufferedReader br = new BufferedReader(fr);
+    		FileReader amfr = new FileReader("/root/soda/accu_dataMinute.txt");
+    		BufferedReader ambr = new BufferedReader(amfr);
+    		FileReader ahfr = new FileReader("/root/soda/accu_dataHour.txt");
+    		BufferedReader ahbr = new BufferedReader(ahfr);
+    		int[] xishu = {16,24,32,8,5,7,8};
+    		String[] pname ={"metro","taxi","mall","unicom","accident","rainfall","aqi"};
+    		jo_final = new JSONObject();
+    		ja = new JSONArray();  //最终结果
+    		String hresult,mresult,ahresult,amresut;
+    		int i;
+    		String hstring[] = null;  //保存小时信息
+    		String mstring[] = null;
+    		String amstring[] = null;
+    		String ahstring[] = null;
+    		float[] para = new float[7];	
+    		
+    		if((hresult=br.readLine())!=null)
+    		{
+    			hstring = hresult.split(" ");   //20+8+2+1
+    		}
+    		br.close();
+    		fr.close();
+    		fr = new FileReader("/root/soda/dataMinute.txt");
+    		br = new BufferedReader(fr);
+    		int row = 0;
+    		while((mresult=br.readLine())!=null && (amresut=ambr.readLine())!=null && (ahresult=ahbr.readLine())!=null)
+    		{
+    			mstring=mresult.split(" ");   //>=4
+    			amstring=amresut.split(" ");  //4
+    			ahstring=ahresult.split(" "); //4
+    			para[0]=(Float.valueOf(mstring[0])+Integer.valueOf(mstring[1]))/Integer.valueOf(amstring[0]);  //metro
+    			DateAdjuster da = new DateAdjuster();
+    			if(da.getDateHour().contains("2016-03-17"))  //强生出租车缺少3月17日的数据
+    			{
+    				amstring[1]="0";
+    			}
+    			para[1]=(Float.valueOf(mstring[2])+Integer.valueOf(mstring[3])-Integer.valueOf(amstring[1]))/(Integer.valueOf(amstring[2])-Integer.valueOf(amstring[1])); //taxi
+    			switch(row)  //mall
+    			{
+    			    case 0: para[2]=(Float.valueOf(hstring[22])+Integer.valueOf(hstring[23])+Integer.valueOf(hstring[24])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
+    			    case 1: para[2]=(Float.valueOf(hstring[20])+Integer.valueOf(hstring[21])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
+    			    default: para[2]=(Float.valueOf(hstring[25])+Integer.valueOf(hstring[26])+Integer.valueOf(hstring[27])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));
+    			}
+    			para[3]=(Float.valueOf(hstring[row])-Integer.valueOf(ahstring[0]))/(Integer.valueOf(ahstring[1])-Integer.valueOf(ahstring[0]));  //unicom
+    			para[4]=t.accFormal(Integer.valueOf(amstring[3]));  //accident
+    			if(row==2)  //宝山气象站
+    			{
+    				para[5]=t.rainFormal(Float.valueOf(hstring[29]));   //rainfall
+    			}
+    			else   //徐家汇气象站
+    			{
+    				para[5]=t.rainFormal(Float.valueOf(hstring[28]));   //rainfall
+    			}
+    			para[6]=t.aqiFormal(Integer.valueOf(hstring[30]));
+    			//System.out.println(t1+" "+t2);
+    			float score = 0f;
+    			for(i=0;i<7;i++)
+    			{
+    				score += xishu[i]*para[i];
+    			}
+    			JSONObject jo = new JSONObject();
+    			JSONObject jo_tmp = new JSONObject();
+    			try {
+    				jo.put("gid", row+1);
+    				for(i=0;i<7;i++)
+    				{
+    					BigDecimal b = new BigDecimal(para[i]);
+    					b = b.setScale(2, BigDecimal.ROUND_HALF_UP);		
+    					jo_tmp.put(pname[i], b);
+    				}
+    				jo.put("detail", jo_tmp);
+    				BigDecimal b = new BigDecimal(score);
+    				b = b.setScale(2, BigDecimal.ROUND_HALF_UP);	
+    				jo.put("score", b);
+    				ja.put(jo);
+    			}
+    				catch (JSONException e) {
+    					// TODO Auto-generated catch block
+    					e.printStackTrace();
+    			}
+    			row++;
+    		}
+    		br.close();  //差点忘了关闭文件
+    	   fr.close();
+    	   ambr.close();
+    	   amfr.close();
+    	   ahbr.close();
+    	   ahfr.close();
+    	   try {
+    		jo_final.put("current", ja);
+    		fr = new FileReader("/root/soda/dataHalfHour.txt");
+    		br = new BufferedReader(fr);	
+    		i=0;
+    		ja = new JSONArray();
+          while((hresult=br.readLine())!=null)
+    		{
+    			JSONObject jo = new JSONObject();
+    			jo.put("gid", i+1);
+    			hstring = hresult.split(" ");
+    			BigDecimal b = new BigDecimal(hstring[3]);
+    			jo.put("score", b.setScale(2, BigDecimal.ROUND_DOWN));
+    			ja.put(jo);
+    			i++;
+    		}
+          jo_final.put("predict", ja);
+          br.close();
+          fr.close();
+    		
+    	} catch (JSONException e) {
+    		// TODO Auto-generated catch block
+    		e.printStackTrace();
+    	}  
+    	   out.print(jo_final.toString());
+         out.flush();
+     		out.close();
+        }
+      else
+       {
+    	  try {
+			 jo_final.put("current", ja);
+			 jo_final.put("predict", ja);
+			 out.print(jo_final.toString());
+	       out.flush();
+	       out.close();
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		br.close();
-		fr.close();
-		fr = new FileReader("/root/soda/dataMinute.txt");
-		br = new BufferedReader(fr);
-		int row = 0;
-		while((mresult=br.readLine())!=null && (amresut=ambr.readLine())!=null && (ahresult=ahbr.readLine())!=null)
-		{
-			mstring=mresult.split(" ");   //>=4
-			amstring=amresut.split(" ");  //4
-			ahstring=ahresult.split(" "); //4
-			para[0]=(Float.valueOf(mstring[0])+Integer.valueOf(mstring[1]))/Integer.valueOf(amstring[0]);  //metro
-			DateAdjuster da = new DateAdjuster();
-			if(da.getDateHour().contains("2016-03-17"))  //强生出租车缺少3月17日的数据
-			{
-				amstring[1]="0";
-			}
-			para[1]=(Float.valueOf(mstring[2])+Integer.valueOf(mstring[3])-Integer.valueOf(amstring[1]))/(Integer.valueOf(amstring[2])-Integer.valueOf(amstring[1])); //taxi
-			switch(row)  //mall
-			{
-			    case 0: para[2]=(Float.valueOf(hstring[22])+Integer.valueOf(hstring[23])+Integer.valueOf(hstring[24])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
-			    case 1: para[2]=(Float.valueOf(hstring[20])+Integer.valueOf(hstring[21])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));break;
-			    default: para[2]=(Float.valueOf(hstring[25])+Integer.valueOf(hstring[26])+Integer.valueOf(hstring[27])-Integer.valueOf(ahstring[2]))/(Integer.valueOf(ahstring[3])-Integer.valueOf(ahstring[2]));
-			}
-			para[3]=(Float.valueOf(hstring[row])-Integer.valueOf(ahstring[0]))/(Integer.valueOf(ahstring[1])-Integer.valueOf(ahstring[0]));  //unicom
-			para[4]=t.accFormal(Integer.valueOf(amstring[3]));  //accident
-			if(row==2)  //宝山气象站
-			{
-				para[5]=t.rainFormal(Float.valueOf(hstring[29]));   //rainfall
-			}
-			else   //徐家汇气象站
-			{
-				para[5]=t.rainFormal(Float.valueOf(hstring[28]));   //rainfall
-			}
-			para[6]=t.aqiFormal(Integer.valueOf(hstring[30]));
-			//System.out.println(t1+" "+t2);
-			float score = 0f;
-			for(i=0;i<7;i++)
-			{
-				score += xishu[i]*para[i];
-			}
-			JSONObject jo = new JSONObject();
-			JSONObject jo_tmp = new JSONObject();
-			try {
-				jo.put("gid", row+1);
-				for(i=0;i<7;i++)
-				{
-					BigDecimal b = new BigDecimal(para[i]);
-					b = b.setScale(2, BigDecimal.ROUND_HALF_UP);		
-					jo_tmp.put(pname[i], b);
-				}
-				jo.put("detail", jo_tmp);
-				BigDecimal b = new BigDecimal(score);
-				b = b.setScale(2, BigDecimal.ROUND_HALF_UP);	
-				jo.put("score", b);
-				ja.put(jo);
-			}
-				catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-			}
-			row++;
-		}
-		br.close();  //差点忘了关闭文件
-	   fr.close();
-	   ambr.close();
-	   amfr.close();
-	   ahbr.close();
-	   ahfr.close();
-	   try {
-		jo_final.put("current", ja);
-		fr = new FileReader("/root/soda/dataHalfHour.txt");
-		br = new BufferedReader(fr);	
-		i=0;
-		ja = new JSONArray();
-      while((hresult=br.readLine())!=null)
-		{
-			JSONObject jo = new JSONObject();
-			jo.put("gid", i+1);
-			hstring = hresult.split(" ");
-			BigDecimal b = new BigDecimal(hstring[3]);
-			jo.put("score", b.setScale(2, BigDecimal.ROUND_DOWN));
-			ja.put(jo);
-			i++;
-		}
-      jo_final.put("predict", ja);
-      br.close();
-      fr.close();
-		
-	} catch (JSONException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}  
-	   out.print(jo_final.toString());
-      out.flush();
-		out.close();
+       }
+      
 		
 		
 		//response.getWriter().append("Served at: ").append(request.getContextPath());

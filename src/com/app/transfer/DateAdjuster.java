@@ -70,10 +70,10 @@ public class DateAdjuster {
 		}		
 	}
 	
-	public int getLatencyM(String date) throws ParseException
+	public int getLatencyM(String date, int num) throws ParseException
 	{
 		String[] time = date.split(":");
-		return 10*(Integer.parseInt(time[1])/10)+9-Integer.parseInt(time[1]);
+		return 10*(Integer.parseInt(time[1])/10)+num-Integer.parseInt(time[1]);
 	}
 	
 	

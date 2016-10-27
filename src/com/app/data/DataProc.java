@@ -17,7 +17,9 @@ import com.app.transfer.DateAdjuster;
 
 //查询处理类，负责Inceptor查询和组织结果
 public class DataProc {
-   private SqlExec se = new SqlExec();
+   private SqlExec seMinute = new SqlExec();
+   private SqlExec seHalfHour = new SqlExec();
+   private SqlExec seHour = new SqlExec();
    private HoltWinters hw = new HoltWinters();
 	private String query="";
 	private ResultSet rs = null;
@@ -48,7 +50,7 @@ public class DataProc {
 		gid2_score.clear();
 		gid3_score.clear();
 		query="select score from predict where ddate>'"+da.getRevisedDateH(date_half_hour, -24)+"' and ddate<='"+date_half_hour+"'";
-	   rs = se.getSqlResult(query);
+	   rs = seHalfHour.getSqlResult(query);
 	   int row = 0;
 	   while(rs.next())
 	   {
@@ -67,7 +69,7 @@ public class DataProc {
 		   row++;
 	   }
 	   rs.close();
-	   se.closeConn();
+	   seHalfHour.closeConn();
 	}
 	
 	//查询AQI
@@ -75,20 +77,20 @@ public class DataProc {
 	{
 	   //String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
 		query="select aqi from aqi_buc_stime where stime='"+date_hour+"'";
-		rs = se.getSqlResult(query);
+		rs = seHour.getSqlResult(query);
 		while(rs.next())
 		{
 		    aqiResult= rs.getInt(1);
 		}
 		rs.close();
-		se.closeConn();
+		seHour.closeConn();
 	}
 	//查询降雨量
 	private void getRainfall(String date_hour) throws SQLException
 	{
 		//String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
 		query="select rainfall from weather where ddate='"+date_hour+"' and (site='徐家汇' or site='宝山') order by site desc";
-		rs = se.getSqlResult(query);
+		rs = seHour.getSqlResult(query);
 		int row = 0;
 		while(rs.next())
 		{
@@ -96,7 +98,7 @@ public class DataProc {
 		    row++;
 		}
 		rs.close();
-		se.closeConn();
+		seHour.closeConn();
 	}
 	
 	//查询地铁信息
@@ -111,7 +113,7 @@ public class DataProc {
 		//要查60分钟之内的总人数
 		query="select sum(case when price>0 then 1 else 0 end) sum_in,sum(case when price=0 then 1 else 0 end) sum_out from transcard_core right join ggid on (ddate>'"+rdate_min+"' and ddate<='"+date_min+"' and transcard_core.gid=ggid.gid) group by ggid.gid order by ggid.gid";
 		//System.out.println(query);
-		rs = se.getSqlResult(query);
+		rs = seMinute.getSqlResult(query);
 		int row = 0;
 		while(rs.next())
 		{
@@ -120,7 +122,7 @@ public class DataProc {
 			row++;
 		}
 		rs.close();
-		se.closeConn();
+		seMinute.closeConn();
 	}
 	
 	//查询强生数据
@@ -133,7 +135,7 @@ public class DataProc {
 		//要查60分钟之内的总人数
 		query="select sum(case when empty=0 then 1 else 0 end),sum(case when empty=1 then 1 else 0 end) from taxi_core right join ggid on (gps_time>'"+rdate_min+"' and gps_time<='"+date_min+"' and taxi_core.gid=ggid.gid) group by ggid.gid order by ggid.gid";
 		//System.out.println(query);
-		rs = se.getSqlResult(query);
+		rs = seMinute.getSqlResult(query);
 		int row = 0;
 		while(rs.next())
 		{
@@ -142,7 +144,7 @@ public class DataProc {
 			row++;
 		}
 		rs.close();
-		se.closeConn();
+		seMinute.closeConn();
 	}
 	
 	//查询事故信息
@@ -151,7 +153,7 @@ public class DataProc {
 		//String date_min = new DateAdjuster().getDate();  //获取当前日期，精确到分钟	
 		String rdate_min = da.getRevisedDate(date_min, -15);
 		query="select location,lo,la,gid from accident_core where ddate>'"+rdate_min+"' and ddate<='"+date_min+"'";
-		rs = se.getSqlResult(query);
+		rs = seMinute.getSqlResult(query);
 		Object[] result = new Object[4];
 		accResult.clear();
 		accCount[0]=accCount[1]=accCount[2]=0;    //清零
@@ -164,7 +166,7 @@ public class DataProc {
 			accResult.add(result);
 		}	
 		rs.close();
-		se.closeConn();
+		seMinute.closeConn();
 	}
 	//查询汇纳商圈数据，返回人数
 	private void getMall(String date_hour) throws SQLException
@@ -172,7 +174,7 @@ public class DataProc {
 		//String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
 		//String[] para=date_hour.split(" ");
 		query="select num from mall_core where ddate='"+date_hour+"' order by mname";
-		rs = se.getSqlResult(query);
+		rs = seHour.getSqlResult(query);
 	   int row = 0;
 		while(rs.next())
 		{
@@ -180,7 +182,7 @@ public class DataProc {
 		    row++;
 		}
 		rs.close();
-		se.closeConn();
+		seHour.closeConn();
 	}
 	
 	//联通数据
@@ -189,7 +191,7 @@ public class DataProc {
 		//String date_hour = new DateAdjuster().getDateHour();  //获取当前日期，精确到小时
 		//String[] para=date_hour.split(" ");
 		query="select count(*) from unicom_core where ddate='"+date_hour+"' group by gid order by gid";
-		rs = se.getSqlResult(query);
+		rs = seHour.getSqlResult(query);
 	    int row = 0;
 		while(rs.next())
 		{
@@ -197,7 +199,7 @@ public class DataProc {
 		    row++;
 		}
 		rs.close();
-		se.closeConn();
+		seHour.closeConn();
 	}
 	
 	/*以下是累计一小时的数据*/
@@ -235,7 +237,7 @@ public class DataProc {
 				"else 25 end tj "+
 				"from transcard_core where ddate>'"+da.getRevisedDateH(date_min, -24)+"' and ddate<='"+date_min+"' and gid<4 group by tj,gid) group by "+"gid order by gid";
 		//System.out.println(query);
-		rs = se.getSqlResult(query);
+		rs = seMinute.getSqlResult(query);
 		int row = 0;
 		while(rs.next())
 		{
@@ -243,7 +245,7 @@ public class DataProc {
 			row++;
 		}
 		rs.close();
-		se.closeConn();
+		seMinute.closeConn();
 	}
 	
 	private void min_Max_Taxi(String date_min) throws ParseException, SQLException
@@ -279,7 +281,7 @@ public class DataProc {
 				"when gps_time>'"+da.getRevisedDateH(date_min, -24)+"' and gps_time<='"+da.getRevisedDateH(date_min, -23)+"' then 24 "+
 				"else 25 end tj "+
 				"from taxi_core where gps_time>'"+da.getRevisedDateH(date_min, -24)+"' and gps_time<='"+date_min+"' and taxi_core.gid<4 group by tj,gid) group by gid order by gid";
-		rs = se.getSqlResult(query);
+		rs = seMinute.getSqlResult(query);
 		int row = 0;
 		while(rs.next())
 		{
@@ -288,7 +290,7 @@ public class DataProc {
 			row++;
 		}
 		rs.close();
-		se.closeConn();
+		seMinute.closeConn();
 	}
 	
 	private void min_Max_Mall(String date_hour) throws ParseException, SQLException
@@ -300,7 +302,7 @@ public class DataProc {
 				"when mname like 'W%' then 3 "+
 				"else 4 end gid "+
 				"from mall_core where ddate>'"+da.getRevisedDateH(date_hour, -24)+"' and ddate<='"+date_hour+"' group by ddate,gid) group by gid order by gid";
-		rs = se.getSqlResult(query);
+		rs = seHour.getSqlResult(query);
 	   int row = 0;
 		while(rs.next())
 		{
@@ -309,7 +311,7 @@ public class DataProc {
 		    row++;
 		}
 		rs.close();
-		se.closeConn();
+		seHour.closeConn();
 	}
 	
 	private void min_Max_Unicom(String date_hour) throws ParseException, SQLException
@@ -320,7 +322,7 @@ public class DataProc {
 				"max(summ) from(select gid,count(*) summ "+
 				"from unicom_core where ddate>'"+da.getRevisedDateH(date_hour, -24)+"' and ddate<='"+date_hour+"' and gid<4 group by ddate,gid) group by gid order by gid";
 
-		rs = se.getSqlResult(query);
+		rs = seHour.getSqlResult(query);
 	   int row = 0;
 		while(rs.next())
 		{
@@ -329,7 +331,7 @@ public class DataProc {
 		    row++;
 		}
 		rs.close();
-		se.closeConn();
+		seHour.closeConn();
 	}
 	
 	
@@ -495,23 +497,35 @@ public class DataProc {
 				FileLock fl = null;
 				int i;
 				double[] temp = new double[gid1_score.size()];
-				//计算预测值
-				for(i=0;i<gid1_score.size();i++)
-				{
-					temp[i]= gid1_score.get(i);
-				}
-			   predictScore[0]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
-			   for(i=0;i<gid2_score.size();i++)
-				{
-					temp[i]= gid2_score.get(i);
-				}
-			   predictScore[1]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
-			   for(i=0;i<gid3_score.size();i++)
-				{
-					temp[i]= gid3_score.get(i);
-				}
-			   predictScore[2]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
 				try {
+				   //计算预测值
+				  fo = new FileOutputStream("/root/soda/dataHistory.txt");
+				  ow = new OutputStreamWriter(fo);
+				  bw = new BufferedWriter(ow);
+				  for(i=0;i<gid1_score.size();i++)
+				   {
+					   temp[i]= gid1_score.get(i);
+					   bw.write(temp[i]+" ");
+				   }
+				   bw.write("\n");
+			      predictScore[0]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
+			      for(i=0;i<gid2_score.size();i++)
+				    {
+					   temp[i]= gid2_score.get(i);
+					   bw.write(temp[i]+" ");
+				    }
+			      bw.write("\n");
+			      predictScore[1]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
+			      for(i=0;i<gid3_score.size();i++)
+				    {
+				  	  temp[i]= gid3_score.get(i);
+				  	  bw.write(temp[i]+" ");
+				    }
+			      bw.write("\n");
+			      predictScore[2]=hw.forecast(temp, 0.6884199, 0.8652352, 1,1, false);
+				   bw.close();
+				   ow.close();
+				   fo.close();
 					fo = new FileOutputStream("/root/soda/dataHalfHour.txt");
 				   ow = new OutputStreamWriter(fo);
 					bw = new BufferedWriter(ow);

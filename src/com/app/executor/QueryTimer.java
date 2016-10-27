@@ -37,8 +37,8 @@ public class QueryTimer {
 		Date cur_date = new Date();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");	
 		calendar.setTime(cur_date);
-		calendar.add(Calendar.MINUTE, new DateAdjuster().getLatencyM(dateFormat.format(cur_date)));
-		calendar.set(Calendar.SECOND, 0);
+		calendar.add(Calendar.MINUTE, new DateAdjuster().getLatencyM(dateFormat.format(cur_date),9));
+		calendar.set(Calendar.SECOND, 45);
 		Date time_start = calendar.getTime();
 		Timer timer = new Timer();
 		timer.scheduleAtFixedRate(new TimerTask() {

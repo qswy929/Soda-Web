@@ -82,8 +82,13 @@ public class HoltWinters {
 		if (debug) {
 			printArray("Forecast", forecast);
 		}
-		BigDecimal b = new BigDecimal(forecast[forecast.length-1]);
-		b = b.setScale(2, BigDecimal.ROUND_HALF_UP);
+		double tmp = forecast[forecast.length-1];
+		if(tmp>100)
+		{		
+			tmp = 100;
+		}
+		BigDecimal b = new BigDecimal(tmp);	
+		b = b.setScale(2, BigDecimal.ROUND_HALF_UP);	
 		return b;
 	}
 	
